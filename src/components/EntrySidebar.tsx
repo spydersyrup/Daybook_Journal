@@ -36,6 +36,16 @@ const cleanMarkdownExcerpt = (content: string): string => {
     .trim();
 };
 
+const MOOD_DOT_COLORS: Record<string, string> = {
+  gratitude: 'bg-amber-400',
+  calm: 'bg-sky-400',
+  reflective: 'bg-purple-400',
+  energized: 'bg-emerald-400',
+  motivated: 'bg-orange-400',
+  anxious: 'bg-indigo-400',
+  frustrated: 'bg-rose-400',
+};
+
 export const EntrySidebar: React.FC<EntrySidebarProps> = ({
   entries,
   selectedEntryId,
@@ -156,7 +166,7 @@ export const EntrySidebar: React.FC<EntrySidebarProps> = ({
         <div
           onClick={onToggleOpen}
           aria-hidden="true"
-          className="fixed inset-0 z-40 bg-black/70 lg:hidden"
+          className="fixed inset-0 z-40 bg-black/70 backdrop-blur-xs lg:hidden"
         />
       )}
 
@@ -169,8 +179,8 @@ export const EntrySidebar: React.FC<EntrySidebarProps> = ({
       >
         <div className="flex shrink-0 flex-col gap-2.5 p-3.5 border-b border-white/[.04]">
           <div className="flex items-center justify-between px-0.5">
-            <span className="text-[11px] font-medium text-stone-400">
-              Journal
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-stone-400">
+              Journal Entries
             </span>
             <button
               type="button"
@@ -191,13 +201,13 @@ export const EntrySidebar: React.FC<EntrySidebarProps> = ({
                 onToggleOpen();
               }
             }}
-            className="flex w-full items-center justify-between rounded-lg border border-white/10 bg-white/[.04] px-3 py-2 text-xs font-medium text-stone-200 transition hover:bg-white/[.08] hover:text-white"
+            className="flex w-full items-center justify-between rounded-lg border border-white/10 bg-white/[.05] px-3.5 py-2 text-xs font-medium text-stone-100 transition hover:bg-white/[.09] hover:border-white/20 shadow-sm"
           >
             <div className="flex items-center gap-2">
-              <Plus className="h-3.5 w-3.5 text-stone-400" />
-              <span>New entry</span>
+              <Plus className="h-3.5 w-3.5 text-stone-300" />
+              <span>New reflection</span>
             </div>
-            <span className="text-[10px] text-stone-400 font-mono">⌘N</span>
+            <span className="text-[10px] text-stone-400 font-mono bg-white/[.06] px-1.5 py-0.5 rounded">⌘N</span>
           </button>
         </div>
 
@@ -207,10 +217,10 @@ export const EntrySidebar: React.FC<EntrySidebarProps> = ({
             <input
               type="text"
               aria-label="Search entries"
-              placeholder="Search..."
+              placeholder="Search thoughts, tags, places..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-lg border border-white/[.06] bg-[#161413] py-1.5 pl-8 pr-7 text-xs text-stone-200 placeholder:text-stone-500 focus:border-stone-500 focus:outline-none transition-colors"
+              className="w-full rounded-lg border border-white/[.06] bg-[#161413] py-1.5 pl-8 pr-7 text-xs text-stone-200 placeholder:text-stone-500 focus:border-stone-500 focus:bg-[#1a1816] focus:outline-none transition-colors"
             />
             {searchQuery && (
               <button
@@ -226,7 +236,7 @@ export const EntrySidebar: React.FC<EntrySidebarProps> = ({
 
           <div className="flex items-center justify-between gap-2">
             <span className="text-[11px] text-stone-400 pl-0.5">
-              Feeling
+              Filter
             </span>
             <SelectMenu
               label="Feeling filter"
@@ -256,13 +266,14 @@ export const EntrySidebar: React.FC<EntrySidebarProps> = ({
 
                 {group.items.map((entry) => {
                   const isSelected = entry.id === selectedEntryId;
+                  const moodDot = entry.mood ? MOOD_DOT_COLORS[entry.mood] || 'bg-stone-500' : 'bg-stone-600';
                   return (
                     <div
                       key={entry.id}
-                      className={`group relative rounded-lg transition-colors ${
+                      className={`group relative rounded-lg transition-all ${
                         isSelected
-                          ? 'bg-white/[.06] text-[#f5efe6]'
-                          : 'text-stone-400 hover:bg-white/[.025] hover:text-stone-200'
+                          ? 'bg-white/[.08] text-[#f5efe6] shadow-sm border-l-2 border-stone-300'
+                          : 'text-stone-400 hover:bg-white/[.03] hover:text-stone-200'
                       }`}
                     >
                       <button
@@ -277,20 +288,23 @@ export const EntrySidebar: React.FC<EntrySidebarProps> = ({
                         className="w-full cursor-pointer px-2.5 py-2 pr-7 text-left focus:outline-none"
                       >
                         <div className="flex items-baseline justify-between gap-1.5">
-                          <h4 className={`text-xs truncate flex-1 font-medium ${isSelected ? 'text-[#f5efe6]' : 'text-stone-300 group-hover:text-stone-100'}`}>
-                            {entry.title || 'Untitled'}
-                          </h4>
-                          <span className="text-[10px] text-stone-400 shrink-0">
+                          <div className="flex items-center gap-1.5 truncate flex-1 min-w-0">
+                            <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${moodDot}`} />
+                            <h4 className={`text-xs truncate font-medium ${isSelected ? 'text-[#f5efe6]' : 'text-stone-300 group-hover:text-stone-100'}`}>
+                              {entry.title || 'Untitled'}
+                            </h4>
+                          </div>
+                          <span className="text-[10px] text-stone-400 shrink-0 font-mono">
                             {formatEntryTime(entry.createdAt)}
                           </span>
                         </div>
 
-                        <p className="mt-0.5 text-xs text-stone-400 line-clamp-1 font-serif-editor">
+                        <p className="mt-0.5 text-xs text-stone-400 line-clamp-1 font-serif-editor pl-3">
                           {cleanMarkdownExcerpt(entry.content)}
                         </p>
 
                         {(entry.mood || entry.location?.name || (entry.tags && entry.tags.length > 0)) && (
-                          <div className="mt-1 flex items-center gap-2 text-[10px] text-stone-500">
+                          <div className="mt-1 flex items-center gap-2 text-[10px] text-stone-500 pl-3">
                             {entry.mood && (
                               <span className="capitalize text-stone-400">{entry.mood}</span>
                             )}
@@ -324,7 +338,7 @@ export const EntrySidebar: React.FC<EntrySidebarProps> = ({
           )}
         </div>
 
-        <div className="shrink-0 border-t border-white/[.04] px-3 py-2.5 text-[11px] text-stone-400">
+        <div className="shrink-0 border-t border-white/[.04] px-3 py-2.5 text-[11px] text-stone-400 font-mono">
           <span>{entries.length} {entries.length === 1 ? 'entry' : 'entries'}</span>
         </div>
       </aside>

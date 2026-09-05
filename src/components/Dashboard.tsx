@@ -611,6 +611,26 @@ ${activeEntry.analysis.followUpQuestions.map((q) => `- ${q}`).join('\n')}
     }
   };
 
+  const handleFormatText = (prefix: string, suffix: string = '') => {
+    if (!activeEntry) return;
+    const textarea = document.getElementById('entry-content-textarea') as HTMLTextAreaElement | null;
+    if (!textarea) {
+      handleContentChange((activeEntry.content || '') + prefix + suffix);
+      return;
+    }
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const current = activeEntry.content || '';
+    const selectedText = current.substring(start, end);
+    const replacement = prefix + (selectedText || 'text') + suffix;
+    const newContent = current.substring(0, start) + replacement + current.substring(end);
+    handleContentChange(newContent);
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + prefix.length, start + prefix.length + (selectedText ? selectedText.length : 4));
+    }, 50);
+  };
+
   const readingMinutes = Math.max(1, Math.ceil((activeEntry?.wordCount || 0) / 180));
 
   return (
@@ -641,7 +661,7 @@ ${activeEntry.analysis.followUpQuestions.map((q) => `- ${q}`).join('\n')}
                 aria-selected={viewMode === 'editor'}
                 className={`rounded-md px-3 py-1 text-xs font-medium transition ${
                   viewMode === 'editor'
-                    ? 'bg-white/[.08] text-white'
+                    ? 'bg-white/[.08] text-white shadow-xs'
                     : 'text-stone-400 hover:text-stone-200'
                 }`}
                 title="Write"
@@ -655,7 +675,7 @@ ${activeEntry.analysis.followUpQuestions.map((q) => `- ${q}`).join('\n')}
                 aria-selected={viewMode === 'split'}
                 className={`rounded-md px-3 py-1 text-xs font-medium transition ${
                   viewMode === 'split'
-                    ? 'bg-white/[.08] text-white'
+                    ? 'bg-white/[.08] text-white shadow-xs'
                     : 'text-stone-400 hover:text-stone-200'
                 }`}
                 title="Split view"
@@ -669,7 +689,7 @@ ${activeEntry.analysis.followUpQuestions.map((q) => `- ${q}`).join('\n')}
                 aria-selected={viewMode === 'chat'}
                 className={`rounded-md px-3 py-1 text-xs font-medium transition ${
                   viewMode === 'chat'
-                    ? 'bg-white/[.08] text-white'
+                    ? 'bg-white/[.08] text-white shadow-xs'
                     : 'text-stone-400 hover:text-stone-200'
                 }`}
                 title="Chat"
@@ -703,7 +723,7 @@ ${activeEntry.analysis.followUpQuestions.map((q) => `- ${q}`).join('\n')}
                 type="button"
                 onClick={() => setIsInsightsOpen(true)}
                 className="flex items-center gap-1.5 rounded-lg border border-white/[.06] bg-white/[.02] px-2.5 py-1 text-xs text-stone-300 hover:bg-white/[.06] hover:text-white transition"
-                title="View journal insights"
+                title="View journal insights & trajectory"
               >
                 <BarChart2 className="h-3.5 w-3.5 text-stone-400" />
                 <span className="hidden sm:inline">Insights</span>
@@ -740,7 +760,7 @@ ${activeEntry.analysis.followUpQuestions.map((q) => `- ${q}`).join('\n')}
                 )}
                 {saveStatus === 'saved' && (
                   <span className="flex items-center gap-1 text-stone-400">
-                    <Check className="h-3.5 w-3.5 text-stone-400" />
+                    <Check className="h-3.5 w-3.5 text-emerald-400/80" />
                     <span>Saved</span>
                   </span>
                 )}
@@ -748,7 +768,7 @@ ${activeEntry.analysis.followUpQuestions.map((q) => `- ${q}`).join('\n')}
                   <button
                     type="button"
                     onClick={() => activeEntry && persistEntry(activeEntry)}
-                    className="text-xs text-stone-400 hover:text-white underline underline-offset-2"
+                    className="text-xs text-amber-300/80 hover:text-amber-200 underline underline-offset-2"
                     title="Save changes (⌘S)"
                   >
                     Save
@@ -783,7 +803,7 @@ ${activeEntry.analysis.followUpQuestions.map((q) => `- ${q}`).join('\n')}
           /* Subtle Exit Header when in Focus Mode */
           <div className="flex shrink-0 items-center justify-between border-b border-white/[.04] bg-[#0e0d0c] px-6 py-2.5 text-xs text-stone-400">
             <span className="text-[11px] font-serif-editor italic text-stone-400">
-              Focus
+              Zen Focus
             </span>
             <button
               type="button"
@@ -859,13 +879,13 @@ ${activeEntry.analysis.followUpQuestions.map((q) => `- ${q}`).join('\n')}
                         type="button"
                         onClick={handleSuggestMetadata}
                         disabled={suggestingMeta}
-                        className="flex shrink-0 items-center gap-1 rounded-md border border-white/10 bg-white/[.04] px-2.5 py-1 text-[11px] font-medium text-stone-300 transition hover:bg-white/[.08] hover:text-white disabled:opacity-40"
+                        className="flex shrink-0 items-center gap-1 rounded-md border border-white/10 bg-white/[.04] px-2.5 py-1 text-[11px] font-medium text-stone-300 transition hover:bg-white/[.08] hover:text-white disabled:opacity-40 shadow-xs"
                         title="Suggest title & tags"
                       >
                         {suggestingMeta ? (
                           <div className="h-3 w-3 rounded-full border border-stone-300 border-t-transparent animate-spin" />
                         ) : (
-                          <PenLine className="h-3 w-3 text-stone-400" />
+                          <PenLine className="h-3 w-3 text-amber-400/80" />
                         )}
                         <span className="hidden sm:inline">Suggest title</span>
                       </button>
@@ -937,7 +957,7 @@ ${activeEntry.analysis.followUpQuestions.map((q) => `- ${q}`).join('\n')}
                       onClick={() => setIsPreviewMode(false)}
                       className={`flex items-center gap-1.5 rounded px-2.5 py-1 text-xs transition ${
                         !isPreviewMode
-                          ? 'bg-white/[.08] font-medium text-white'
+                          ? 'bg-white/[.08] font-medium text-white shadow-xs'
                           : 'text-stone-500 hover:text-stone-300'
                       }`}
                     >
@@ -949,19 +969,72 @@ ${activeEntry.analysis.followUpQuestions.map((q) => `- ${q}`).join('\n')}
                       onClick={() => setIsPreviewMode(true)}
                       className={`flex items-center gap-1.5 rounded px-2.5 py-1 text-xs transition ${
                         isPreviewMode
-                          ? 'bg-white/[.08] font-medium text-white'
+                          ? 'bg-white/[.08] font-medium text-white shadow-xs'
                           : 'text-stone-500 hover:text-stone-300'
                       }`}
                     >
                       <Eye className="h-3 w-3" />
                       <span>Preview</span>
                     </button>
+
+                    {!isPreviewMode && (
+                      <div className="hidden sm:flex items-center gap-0.5 ml-2 pl-2 border-l border-white/[.08]">
+                        <button
+                          type="button"
+                          onClick={() => handleFormatText('**', '**')}
+                          className="h-6 w-6 rounded text-stone-400 hover:bg-white/[.06] hover:text-stone-100 font-bold text-xs"
+                          title="Bold (**text**)"
+                        >
+                          B
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleFormatText('*', '*')}
+                          className="h-6 w-6 rounded text-stone-400 hover:bg-white/[.06] hover:text-stone-100 italic text-xs font-serif-editor"
+                          title="Italic (*text*)"
+                        >
+                          I
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleFormatText('### ')}
+                          className="h-6 w-6 rounded text-stone-400 hover:bg-white/[.06] hover:text-stone-100 text-[11px] font-mono"
+                          title="Heading (###)"
+                        >
+                          H
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleFormatText('> ')}
+                          className="h-6 w-6 rounded text-stone-400 hover:bg-white/[.06] hover:text-stone-100 text-xs font-serif-editor"
+                          title="Quote block (>)"
+                        >
+                          &ldquo;
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleFormatText('- ')}
+                          className="h-6 w-6 rounded text-stone-400 hover:bg-white/[.06] hover:text-stone-100 text-xs"
+                          title="Bullet list (-)"
+                        >
+                          &bull;
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleFormatText('- [ ] ')}
+                          className="h-6 w-6 rounded text-stone-400 hover:bg-white/[.06] hover:text-stone-100 text-[11px]"
+                          title="Checklist item (- [ ])"
+                        >
+                          &check;
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   <button
                     type="button"
                     onClick={() => setIsVoiceModalOpen(true)}
-                    className="flex items-center gap-1 text-[11px] text-stone-400 hover:text-[#d6b889] transition"
+                    className="flex items-center gap-1.5 text-[11px] text-stone-400 hover:text-stone-200 transition rounded px-2 py-0.5 hover:bg-white/[.04]"
                     title="Dictate with voice"
                   >
                     <Mic className="h-3 w-3 text-stone-400" />
@@ -1013,9 +1086,9 @@ ${activeEntry.analysis.followUpQuestions.map((q) => `- ${q}`).join('\n')}
 
                 <div className="shrink-0 flex flex-col sm:flex-row items-center justify-between gap-2.5 border-t border-white/[.04] pt-2.5 sm:pt-3 text-xs text-stone-400">
                   <div className="flex items-center gap-2 text-stone-400">
-                    <span>{activeEntry.wordCount || 0} {activeEntry.wordCount === 1 ? 'word' : 'words'}</span>
-                    <span className="text-stone-600">/</span>
-                    <span>{readingMinutes} min read</span>
+                    <span className="font-mono">{activeEntry.wordCount || 0} {activeEntry.wordCount === 1 ? 'word' : 'words'}</span>
+                    <span className="text-stone-600">&bull;</span>
+                    <span className="font-mono">{readingMinutes} min read</span>
                   </div>
 
                   {!isFocusMode && (
@@ -1027,7 +1100,7 @@ ${activeEntry.analysis.followUpQuestions.map((q) => `- ${q}`).join('\n')}
                         handleAnalyze();
                       }}
                       disabled={analyzing || !activeEntry.content.trim()}
-                      className="flex items-center gap-1.5 rounded-md bg-stone-100 px-3.5 py-1.5 text-xs font-medium text-stone-900 transition hover:bg-white disabled:opacity-30 disabled:hover:bg-stone-100"
+                      className="flex items-center gap-1.5 rounded-lg bg-stone-100 px-4 py-1.5 text-xs font-medium text-stone-900 transition hover:bg-white disabled:opacity-30 disabled:hover:bg-stone-100 shadow-sm"
                     >
                       {analyzing ? (
                         <>
@@ -1037,7 +1110,7 @@ ${activeEntry.analysis.followUpQuestions.map((q) => `- ${q}`).join('\n')}
                       ) : (
                         <>
                           <Compass className="h-3.5 w-3.5 text-stone-700" />
-                          <span>Reflect</span>
+                          <span>Reflect with Gemini</span>
                         </>
                       )}
                     </button>
