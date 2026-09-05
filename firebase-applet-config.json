@@ -1,0 +1,12 @@
+{
+  "projectId": "daybook--journal",
+  "appId": "1:342079235168:web:87d5a05de44ee78c6c0f05",
+  "apiKey": "AIzaSyA3aAiW5oXSCk3B3rMbrNuOG0WmKx_nFzQ",
+  "authDomain": "daybook--journal.firebaseapp.com",
+  "firestoreDatabaseId": "(default)",
+  "storageBucket": "daybook--journal.firebasestorage.app",
+  "messagingSenderId": "342079235168",
+  "measurementId": "",
+  "oAuthClientId": "",
+  "recaptchaSiteKey": ""
+}

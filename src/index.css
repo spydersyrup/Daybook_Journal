@@ -1,0 +1,121 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --color-canvas: #0e0d0c;
+    --color-surface-1: #141311;
+    --color-surface-2: #1b1917;
+    --color-surface-3: #23211e;
+    --color-border-subtle: rgba(255, 255, 255, 0.05);
+    --color-border-elevated: rgba(255, 255, 255, 0.09);
+    --color-text-primary: #f5efe6;
+    --color-text-secondary: #a3988c;
+    --color-text-muted: #6e6459;
+    --color-accent: #e2d3c1;
+    --color-accent-subtle: rgba(226, 211, 193, 0.1);
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: var(--color-canvas);
+    color: var(--color-text-primary);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  button, input, select, textarea {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+    outline: 1.5px solid rgba(226, 211, 193, 0.6);
+    outline-offset: 2px;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+  }
+}
+
+.font-serif-editor {
+  font-family: 'Newsreader', Georgia, Cambria, 'Times New Roman', Times, serif;
+}
+
+/* Custom Scroll Area */
+.scroll-area {
+  scrollbar-color: #2e2924 transparent;
+  scrollbar-width: thin;
+}
+
+.scroll-area::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.scroll-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scroll-area::-webkit-scrollbar-thumb {
+  background: #2e2924;
+  border-radius: 999px;
+}
+
+.scroll-area::-webkit-scrollbar-thumb:hover {
+  background: #3d3731;
+}
+
+/* Editorial Markdown Rendering */
+.markdown-body {
+  color: #dfd7cc;
+}
+
+.markdown-body p {
+  margin-top: 0.7em;
+  margin-bottom: 0.7em;
+  line-height: 1.75;
+}
+
+.markdown-body p:first-child {
+  margin-top: 0;
+}
+
+.markdown-body p:last-child {
+  margin-bottom: 0;
+}
+
+.markdown-body ul, .markdown-body ol {
+  margin: 0.6em 0;
+  padding-left: 1.2em;
+}
+
+.markdown-body li {
+  margin-top: 0.25em;
+  margin-bottom: 0.25em;
+  line-height: 1.65;
+}
+
+.markdown-body strong {
+  color: #f5efe6;
+  font-weight: 600;
+}
+
+.markdown-body em {
+  color: #ded6cb;
+}
+
+.markdown-body blockquote {
+  border-left: 2px solid rgba(226, 211, 193, 0.35);
+  padding-left: 0.85rem;
+  margin: 0.85rem 0;
+  color: #a3988c;
+  font-style: italic;
+}
+
+.markdown-body h1, .markdown-body h2, .markdown-body h3 {
+  color: #f5efe6;
+  font-family: 'Newsreader', Georgia, serif;
+  font-weight: 400;
+  margin-top: 1.2em;
+  margin-bottom: 0.4em;
+}
