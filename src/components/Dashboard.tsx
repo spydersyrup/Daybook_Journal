@@ -17,6 +17,7 @@ import {
   Layers,
   PenLine,
   Compass,
+  Mail,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -30,6 +31,8 @@ import { DigestModal } from './DigestModal';
 import { VoiceJournalModal } from './VoiceJournalModal';
 import { Dialog } from './Dialog';
 import { SelectMenu } from './SelectMenu';
+import { EchoesPanel } from './EchoesPanel';
+import { FutureLetterModal } from './FutureLetterModal';
 import {
   analyzeJournalEntry,
   chatWithGemini,
@@ -44,6 +47,7 @@ import type {
   PromptInspiration,
   EntryLocation,
   VoiceStructuredEntry,
+  ReflectionMode,
 } from '../types';
 
 interface DashboardProps {
@@ -63,6 +67,8 @@ const MOODS: Array<{ id: JournalEntry['mood']; label: string }> = [
   { id: 'anxious', label: 'Anxious' },
   { id: 'frustrated', label: 'Frustrated' },
 ];
+
+const SAFETY_LANGUAGE = /\b(kill myself|suicid(?:e|al)|self[- ]?harm|hurt myself|end my life|don't want to live|do not want to live)\b/i;
 
 export const Dashboard: React.FC<DashboardProps> = ({
   user,
@@ -89,9 +95,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [isDigestModalOpen, setIsDigestModalOpen] = useState(false);
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
+  const [isFutureLetterOpen, setIsFutureLetterOpen] = useState(false);
 
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [suggestingMeta, setSuggestingMeta] = useState(false);
+  const [reflectionMode, setReflectionMode] = useState<ReflectionMode>('gentle');
 
   const [tagInput, setTagInput] = useState('');
 
@@ -305,6 +313,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
     return trimmed ? trimmed.split(/\s+/).length : 0;
   };
 
+  const mayNeedImmediateSupport = Boolean(activeEntry?.content && SAFETY_LANGUAGE.test(activeEntry.content));
+
   const handleTitleChange = (title: string) => {
     updateActiveEntry((prev) => ({ ...prev, title }));
   };
@@ -464,6 +474,27 @@ export const Dashboard: React.FC<DashboardProps> = ({
     showToast('Weekly review saved to your journal!', 'success');
   };
 
+  const handleCreateFutureLetter = async (title: string, content: string, unlockAt: number) => {
+    const letter: JournalEntry = {
+      id: 'letter_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+      userId: user.uid,
+      title,
+      content,
+      mood: 'reflective',
+      tags: ['future-self', 'time-capsule'],
+      location: null,
+      analysis: null,
+      messages: [],
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      wordCount: computeWordCount(content),
+      lockedUntil: unlockAt,
+    };
+    setEntries((prev) => [letter, ...prev]);
+    await persistEntry(letter);
+    showToast(`Letter sealed until ${new Date(unlockAt).toLocaleDateString()}`, 'success');
+  };
+
   const handleAnalyze = async () => {
     if (!activeEntry || !activeEntry.content.trim()) {
       showToast('Write a few sentences before reflecting.', 'info');
@@ -477,6 +508,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         content: activeEntry.content,
         mood: activeEntry.mood,
         location: activeEntry.location,
+        mode: reflectionMode,
       });
 
       const updated = {
@@ -640,6 +672,10 @@ ${activeEntry.analysis.followUpQuestions.map((q) => `- ${q}`).join('\n')}
           entries={entries}
           selectedEntryId={activeEntry?.id || null}
           onSelectEntry={(entry) => {
+            if (entry.lockedUntil && entry.lockedUntil > Date.now()) {
+              showToast(`This letter is sealed until ${new Date(entry.lockedUntil).toLocaleDateString()}.`, 'info');
+              return;
+            }
             setActiveEntry(entry);
             setSaveStatus('saved');
           }}
@@ -699,6 +735,15 @@ ${activeEntry.analysis.followUpQuestions.map((q) => `- ${q}`).join('\n')}
             </div>
 
             <div className="flex items-center gap-1 sm:gap-1.5">
+              <button
+                type="button"
+                onClick={() => setIsFutureLetterOpen(true)}
+                className="flex items-center gap-1.5 rounded-lg border border-[#d6b889]/15 bg-[#d6b889]/[.04] px-2.5 py-1 text-xs text-[#d6b889] hover:bg-[#d6b889]/[.10] transition"
+                title="Write a letter to your future self"
+              >
+                <Mail className="h-3.5 w-3.5" />
+                <span className="hidden md:inline">Future self</span>
+              </button>
               <button
                 type="button"
                 onClick={() => setIsDigestModalOpen(true)}
@@ -901,6 +946,22 @@ ${activeEntry.analysis.followUpQuestions.map((q) => `- ${q}`).join('\n')}
                       options={MOODS}
                     />
 
+                    <div className="flex items-center gap-2">
+                    <label htmlFor="reflection-mode" className="text-[10px] uppercase tracking-wider text-stone-500 hidden sm:inline">
+                      Reflection style
+                    </label>
+                    <select
+                      id="reflection-mode"
+                      value={reflectionMode}
+                      onChange={(e) => setReflectionMode(e.target.value as ReflectionMode)}
+                      className="rounded-md border border-white/[.08] bg-white/[.03] px-2 py-1 text-[11px] text-stone-300 outline-none hover:bg-white/[.06]"
+                      title="Choose how Gemini approaches this reflection"
+                    >
+                      <option value="gentle">Gentle reflection</option>
+                      <option value="practical">Practical next steps</option>
+                      <option value="patterns">Patterns & tensions</option>
+                      <option value="socratic">Socratic questions</option>
+                    </select>
                     <button
                       type="button"
                       onClick={() => setIsLocationModalOpen(true)}
@@ -914,6 +975,7 @@ ${activeEntry.analysis.followUpQuestions.map((q) => `- ${q}`).join('\n')}
                       <MapPin className="h-3 w-3 shrink-0 text-stone-400" />
                       <span className="max-w-[150px] truncate">{activeEntry.location?.name ? activeEntry.location.name : 'Add location'}</span>
                     </button>
+                    </div>
 
                     <div className="flex flex-wrap items-center gap-1">
                       {activeEntry.tags.map((tag) => (
@@ -1084,6 +1146,13 @@ ${activeEntry.analysis.followUpQuestions.map((q) => `- ${q}`).join('\n')}
                   )}
                 </div>
 
+                {mayNeedImmediateSupport && (
+                  <div className="mb-3 rounded-lg border border-rose-500/20 bg-rose-500/[.06] px-3 py-2.5 text-[11px] leading-relaxed text-rose-200" role="note">
+                    <span className="font-medium">You deserve immediate human support.</span>{' '}
+                    If you may act on these thoughts, contact local emergency services or a trusted person now. Daybook is not a crisis service.
+                  </div>
+                )}
+
                 <div className="shrink-0 flex flex-col sm:flex-row items-center justify-between gap-2.5 border-t border-white/[.04] pt-2.5 sm:pt-3 text-xs text-stone-400">
                   <div className="flex items-center gap-2 text-stone-400">
                     <span className="font-mono">{activeEntry.wordCount || 0} {activeEntry.wordCount === 1 ? 'word' : 'words'}</span>
@@ -1131,6 +1200,12 @@ ${activeEntry.analysis.followUpQuestions.map((q) => `- ${q}`).join('\n')}
                       setViewMode('chat');
                       handleSendMessage(q);
                     }}
+                  />
+
+                  <EchoesPanel
+                    currentEntry={activeEntry}
+                    entries={entries}
+                    onInsert={handleInsertInsight}
                   />
 
                   {activeEntry.analysis && (
@@ -1197,6 +1272,12 @@ ${activeEntry.analysis.followUpQuestions.map((q) => `- ${q}`).join('\n')}
         isOpen={isVoiceModalOpen}
         onClose={() => setIsVoiceModalOpen(false)}
         onApplyEntry={handleApplyVoiceEntry}
+      />
+
+      <FutureLetterModal
+        isOpen={isFutureLetterOpen}
+        onClose={() => setIsFutureLetterOpen(false)}
+        onCreate={handleCreateFutureLetter}
       />
 
       <Dialog

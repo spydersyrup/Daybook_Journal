@@ -46,6 +46,9 @@ Track your writing streaks and log in securely with Google Auth.
 - **Thoughtful Reflections**: Ask Gemini for perspective notes, tone analysis, and gentle follow-up questions when you want a second look at what you wrote.
 - **Voice Journaling**: Record audio notes directly in the app. Speech-to-text cleans out "um"s and "like"s and formats your speech into clean paragraphs.
 - **Weekly Digests**: Synthesize multiple entries over the past 7 or 30 days to spot recurring themes, emotional shifts, and personal milestones.
+- **Echoes & Reflection Loops**: Connect today’s writing to earlier entries using transparent shared themes, then turn an insight into a small experiment and a future check-in.
+- **Letters to Future Self**: Seal a private letter for a chosen date and return to it when the moment arrives with a “what changed?” prompt.
+- **Mood-to-Moment Replay**: Compare moods with the places and themes that recur in your writing to discover conditions that support you.
 - **Location Context**: Add your current location (e.g. city or favorite spot) to remember where your head was at.
 - **Insights & Export**: Track streaks, word counts, and mood trends. Export your notes anytime to standard Markdown files.
 
@@ -55,9 +58,39 @@ Track your writing streaks and log in securely with Google Auth.
 
 - **Frontend**: React 19, TypeScript, and Tailwind CSS.
 - **Backend**: Node.js and Express running on **Google Cloud Run**.
-- **AI**: **Gemini 3.6 Flash** for reflection notes, chat dialogues, and weekly summaries.
+- **AI**: Gemini 3.6 Flash as the primary model, with Gemini 3.1 Flash-Lite, `gemini-flash-latest`, and Gemini 3.7 Flash as bounded fallbacks. Model identifiers are centralized in `server.ts` so they can be updated without changing the UI.
 - **Database & Auth**: **Cloud Firestore** for storage and **Firebase Auth** for Google Sign-In. Each user's data is strictly isolated (`request.auth.uid == userId`).
 - **Secrets**: **Google Cloud Secret Manager** keeps the Gemini API key safely on the backend—never exposed in browser code.
+
+## Architecture
+
+```text
+Browser (React + Firebase Auth)
+        │ authenticated request
+        ▼
+Cloud Run (Express API)
+   │                 │
+   │ Secret Manager  └── Firebase Admin → Firestore
+   ▼
+Gemini API
+```
+
+Journal content is sent to Cloud Run only when the user asks for an AI feature. The backend verifies the Firebase ID token, applies per-user and per-IP limits, calls Gemini with a bounded fallback chain, and returns structured output. Firestore rules enforce `request.auth.uid == userId` with a default-deny catch-all.
+
+## Technical evidence
+
+- Input bounds: 50,000 characters per journal entry, 10,000 characters per chat message, and 10 historical chat messages.
+- Output bounds: 1,024 tokens for analysis and 768 tokens for dialogue.
+- Reliability: 30-second provider timeout, up to four configured model endpoints, and bounded exponential fallback delays.
+- Abuse controls: per-user window and daily limits, per-IP limits, and two concurrent Gemini requests per user.
+- Verification: run `npm run lint`, `npm run build`, and `npm run test:security` before deployment. The security suite uses synthetic data and checks authentication, payload bounds, Firestore isolation, prompt-injection boundaries, safe errors, fallback structure, and cost controls.
+- Cost/latency reporting: set `GEMINI_REQUEST_TIMEOUT_MS` and record Cloud Run request latency plus model usage from the `modelUsed` field during the event demo. Do not claim a fixed average until measured in the deployed region.
+
+The model catalog changes over time; verify the exact IDs against [Google's current Gemini model catalog](https://ai.google.dev/gemini-api/docs/models) before deploying. Production uses explicit stable IDs first and keeps the `latest` alias only as a later fallback.
+
+Daybook is a reflection aid, not a therapist, diagnostic tool, or crisis service. Users should seek qualified professional or emergency support when they may be in immediate danger.
+
+The product’s signature interaction is the Echoes panel: it surfaces connections using the user’s own tags and recurring language, shows the supporting excerpt, and lets the user decide whether to continue the reflection. This keeps longitudinal intelligence explainable and user-controlled.
 
 ---
 

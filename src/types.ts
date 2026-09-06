@@ -23,6 +23,8 @@ export interface AIAnalysis {
   modelUsed?: string;
 }
 
+export type ReflectionMode = 'gentle' | 'practical' | 'patterns' | 'socratic';
+
 export interface EntryLocation {
   name: string;
   latitude?: number;
@@ -42,6 +44,7 @@ export interface JournalEntry {
   createdAt: number;
   updatedAt: number;
   wordCount: number;
+  lockedUntil?: number;
 }
 
 export interface PromptInspiration {

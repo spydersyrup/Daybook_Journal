@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Plus, Search, Trash2, X, MapPin } from 'lucide-react';
+import { Plus, Search, Trash2, X, MapPin, LockKeyhole } from 'lucide-react';
 import type { JournalEntry } from '../types';
 import { SelectMenu } from './SelectMenu';
 
@@ -293,6 +293,7 @@ export const EntrySidebar: React.FC<EntrySidebarProps> = ({
                             <h4 className={`text-xs truncate font-medium ${isSelected ? 'text-[#f5efe6]' : 'text-stone-300 group-hover:text-stone-100'}`}>
                               {entry.title || 'Untitled'}
                             </h4>
+                            {entry.lockedUntil && entry.lockedUntil > Date.now() && <LockKeyhole className="h-3 w-3 shrink-0 text-[#d6b889]" />}
                           </div>
                           <span className="text-[10px] text-stone-400 shrink-0 font-mono">
                             {formatEntryTime(entry.createdAt)}
@@ -300,7 +301,7 @@ export const EntrySidebar: React.FC<EntrySidebarProps> = ({
                         </div>
 
                         <p className="mt-0.5 text-xs text-stone-400 line-clamp-1 font-serif-editor pl-3">
-                          {cleanMarkdownExcerpt(entry.content)}
+                          {entry.lockedUntil && entry.lockedUntil > Date.now() ? `Sealed until ${new Date(entry.lockedUntil).toLocaleDateString()}` : cleanMarkdownExcerpt(entry.content)}
                         </p>
 
                         {(entry.mood || entry.location?.name || (entry.tags && entry.tags.length > 0)) && (

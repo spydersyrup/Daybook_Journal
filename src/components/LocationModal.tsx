@@ -21,6 +21,7 @@ export const LocationModal: React.FC<LocationModalProps> = ({
   const [customName, setCustomName] = useState('');
   const [coords, setCoords] = useState<{ lat?: number; lng?: number }>({});
   const [locating, setLocating] = useState(false);
+  const [approximating, setApproximating] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
@@ -40,6 +41,11 @@ export const LocationModal: React.FC<LocationModalProps> = ({
       return;
     }
 
+    if (!window.isSecureContext && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      setErrorMsg('GPS requires HTTPS in the deployed app. You can still enter a place name manually below.');
+      return;
+    }
+
     setLocating(true);
     setErrorMsg(null);
 
@@ -47,8 +53,12 @@ export const LocationModal: React.FC<LocationModalProps> = ({
       async (pos) => {
         const { latitude, longitude } = pos.coords;
         setCoords({ lat: latitude, lng: longitude });
+        // Coordinates are already useful; reverse geocoding is only a convenience.
+        setCustomName(`Lat ${latitude.toFixed(2)}, Lon ${longitude.toFixed(2)}`);
 
         // Attempt reverse geocoding via OpenStreetMap Nominatim
+        const controller = new AbortController();
+        const timeout = window.setTimeout(() => controller.abort(), 5000);
         try {
           const res = await fetch(
             `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=12`,
@@ -56,6 +66,7 @@ export const LocationModal: React.FC<LocationModalProps> = ({
               headers: {
                 'Accept-Language': 'en',
               },
+              signal: controller.signal,
             }
           );
           if (res.ok) {
@@ -71,6 +82,7 @@ export const LocationModal: React.FC<LocationModalProps> = ({
         } catch {
           setCustomName(`Lat ${latitude.toFixed(2)}, Lon ${longitude.toFixed(2)}`);
         } finally {
+          window.clearTimeout(timeout);
           setLocating(false);
         }
       },
@@ -78,12 +90,36 @@ export const LocationModal: React.FC<LocationModalProps> = ({
         setLocating(false);
         if (err.code === err.PERMISSION_DENIED) {
           setErrorMsg('Location permission was denied. You can enter a place name manually below.');
+        } else if (err.code === err.POSITION_UNAVAILABLE) {
+          setErrorMsg('Your device could not provide GPS coordinates. Try approximate location or enter a place name manually.');
+        } else if (err.code === err.TIMEOUT) {
+          setErrorMsg('GPS took too long to respond. Try approximate location or enter a place name manually.');
         } else {
           setErrorMsg('Could not detect location. Please enter your place name manually.');
         }
       },
-      { timeout: 8000 }
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
     );
+  };
+
+  const handleApproximateLocation = async () => {
+    setApproximating(true);
+    setErrorMsg(null);
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 5000);
+    try {
+      const res = await fetch('https://ipapi.co/json/', { signal: controller.signal });
+      if (!res.ok) throw new Error('Approximate location lookup failed');
+      const data = await res.json();
+      if (typeof data.latitude !== 'number' || typeof data.longitude !== 'number') throw new Error('No coordinates returned');
+      setCoords({ lat: data.latitude, lng: data.longitude });
+      setCustomName([data.city, data.country_name].filter(Boolean).join(', ') || 'Approximate location');
+    } catch {
+      setErrorMsg('Approximate location is unavailable. Please enter a place name manually.');
+    } finally {
+      window.clearTimeout(timeout);
+      setApproximating(false);
+    }
   };
 
   const handleSave = () => {
@@ -146,11 +182,24 @@ export const LocationModal: React.FC<LocationModalProps> = ({
             </>
           )}
         </button>
+        <p className="text-[10px] leading-relaxed text-stone-500">
+          GPS uses your browser permission. The approximate option uses your network-derived city only when you choose it.
+        </p>
 
         {errorMsg && (
-          <p className="text-[11px] text-amber-400/90 leading-relaxed">
-            {errorMsg}
-          </p>
+          <div className="space-y-2">
+            <p className="text-[11px] text-amber-400/90 leading-relaxed">{errorMsg}</p>
+            {(errorMsg.includes('GPS') || errorMsg.includes('position') || errorMsg.includes('detect')) && (
+              <button
+                type="button"
+                onClick={handleApproximateLocation}
+                disabled={approximating}
+                className="rounded-md border border-[#d6b889]/25 bg-[#d6b889]/[.06] px-2.5 py-1.5 text-[11px] text-[#d6b889] hover:bg-[#d6b889]/[.12] disabled:opacity-50"
+              >
+                {approximating ? 'Finding approximate location...' : 'Use approximate location'}
+              </button>
+            )}
+          </div>
         )}
 
         <div className="space-y-1.5">

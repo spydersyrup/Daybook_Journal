@@ -1,5 +1,5 @@
 import React from 'react';
-import { X } from 'lucide-react';
+import { X, ArrowRight, LockKeyhole, Cloud, Database } from 'lucide-react';
 import { Dialog } from './Dialog';
 
 interface ThreatModelModalProps {
@@ -44,6 +44,28 @@ export const ThreatModelModal: React.FC<ThreatModelModalProps> = ({ isOpen, onCl
         </div>
         <p className="text-xs text-stone-500 pt-2 border-t border-white/6">
           Daybook is built as an intentional, quiet space for personal writing and self-reflection.
+        </p>
+        <div className="border-t border-white/6 pt-4">
+          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-[#d6b889]">How a reflection is processed</h3>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
+            {[
+              [LockKeyhole, 'Your browser', 'Firebase signs your request'],
+              [Cloud, 'Cloud Run', 'Keeps the Gemini key server-side'],
+              [Database, 'Gemini + Firestore', 'Generates insight, stores only your entry'],
+            ].map(([Icon, title, description], index) => (
+              <React.Fragment key={title as string}>
+                <div className="flex-1 rounded-lg border border-white/[.06] bg-[#1b1714] p-3">
+                  <Icon className="mb-2 h-3.5 w-3.5 text-[#d6b889]" />
+                  <p className="text-[11px] font-medium text-stone-200">{title as string}</p>
+                  <p className="mt-1 text-[10px] leading-relaxed text-stone-500">{description as string}</p>
+                </div>
+                {index < 2 && <ArrowRight className="hidden h-4 w-4 self-center text-stone-600 sm:block" />}
+              </React.Fragment>
+            ))}
+          </div>
+        </div>
+        <p className="rounded-lg border border-amber-500/15 bg-amber-500/[.04] p-3 text-[11px] leading-relaxed text-stone-400">
+          If writing suggests immediate danger or self-harm, please contact local emergency services or a trusted person. Daybook is not a crisis service.
         </p>
       </div>
 

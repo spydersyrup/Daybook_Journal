@@ -1,5 +1,5 @@
 import React from 'react';
-import { Mic, MapPin, BarChart3, ShieldCheck } from 'lucide-react';
+import { Mic, MapPin, BarChart3, ShieldCheck, PenLine, Sparkles, History } from 'lucide-react';
 
 interface LandingPageProps {
   onSignIn: () => void;
@@ -81,6 +81,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
         </div>
 
+        <div className="grid w-full max-w-md grid-cols-3 gap-2 text-left">
+          {[
+            [PenLine, 'Write', 'Capture the moment'],
+            [Sparkles, 'Reflect', 'Choose your lens'],
+            [History, 'Notice', 'See patterns over time'],
+          ].map(([Icon, title, description]) => (
+            <div key={title as string} className="rounded-lg border border-white/[.06] bg-white/[.02] p-2.5">
+              <Icon className="mb-2 h-3.5 w-3.5 text-[#d6b889]" />
+              <p className="text-[11px] font-medium text-stone-200">{title as string}</p>
+              <p className="mt-0.5 text-[10px] leading-relaxed text-stone-500">{description as string}</p>
+            </div>
+          ))}
+        </div>
+
         <div className="flex flex-col items-center gap-2 w-full max-w-xs pt-1">
           <button
             id="hero-signin-btn"
@@ -116,6 +130,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
           <p className="text-[11px] text-stone-400">
             Private and strictly isolated to your account.
+          </p>
+          <p className="max-w-xs text-[10px] leading-relaxed text-stone-500">
+            Daybook offers reflection prompts, not therapy or medical advice. You stay in control of what you share and save.
           </p>
 
           {error && (

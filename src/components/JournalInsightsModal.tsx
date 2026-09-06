@@ -103,7 +103,7 @@ export const JournalInsightsModal: React.FC<JournalInsightsModalProps> = ({
   entries,
   onOpenDigest,
 }) => {
-  const [activeTab, setActiveTab] = useState<'activity' | 'emotional' | 'habits'>('activity');
+  const [activeTab, setActiveTab] = useState<'activity' | 'emotional' | 'habits' | 'replay'>('activity');
   const [heatmapRange, setHeatmapRange] = useState<'3m' | '6m' | '1y'>('6m');
   const [inspectedDay, setInspectedDay] = useState<{
     dateStr: string;
@@ -377,6 +377,27 @@ export const JournalInsightsModal: React.FC<JournalInsightsModalProps> = ({
     };
   }, [entries, heatmapRange]);
 
+  const moodReplay = useMemo(() => {
+    const positive = new Set(['calm', 'gratitude', 'energized', 'motivated']);
+    const contexts = new Map<string, { total: number; positive: number; words: number }>();
+    entries.forEach((entry) => {
+      const labels = [entry.location?.name, ...entry.tags].filter(Boolean) as string[];
+      labels.forEach((label) => {
+        const key = label.trim();
+        if (!key) return;
+        const item = contexts.get(key) || { total: 0, positive: 0, words: 0 };
+        item.total += 1;
+        item.positive += positive.has(entry.mood || '') ? 1 : 0;
+        item.words += entry.wordCount || 0;
+        contexts.set(key, item);
+      });
+    });
+    return [...contexts.entries()]
+      .map(([label, value]) => ({ label, ...value, score: Math.round((value.positive / value.total) * 100) }))
+      .sort((a, b) => b.score - a.score || b.total - a.total)
+      .slice(0, 6);
+  }, [entries]);
+
   return (
     <Dialog isOpen={isOpen} onClose={onClose} label="Journal Insights" className="max-w-3xl">
       {/* Sleek Top Header */}
@@ -447,6 +468,14 @@ export const JournalInsightsModal: React.FC<JournalInsightsModalProps> = ({
           >
             <Clock className="h-3.5 w-3.5 text-sky-400" />
             <span>Rhythm & Themes</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('replay')}
+            className={`flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-xs font-medium transition-all ${activeTab === 'replay' ? 'bg-white/[0.1] text-white shadow-xs' : 'text-stone-400 hover:text-stone-200'}`}
+          >
+            <Compass className="h-3.5 w-3.5 text-amber-300" />
+            <span>Mood Replay</span>
           </button>
         </div>
 
@@ -856,6 +885,29 @@ export const JournalInsightsModal: React.FC<JournalInsightsModalProps> = ({
           </div>
         )}
 
+        {activeTab === 'replay' && (
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-amber-500/15 bg-gradient-to-br from-amber-500/[.06] to-transparent p-5 space-y-2">
+              <div className="flex items-center gap-2 text-amber-300"><Compass className="h-4 w-4" /><h3 className="text-sm font-medium">Mood-to-Moment Replay</h3></div>
+              <p className="max-w-xl text-xs leading-relaxed text-stone-400">Which places and themes tend to appear when you feel most grounded? These are patterns in your journal—not diagnoses or predictions.</p>
+            </div>
+            {moodReplay.length === 0 ? (
+              <div className="rounded-xl border border-white/[.06] bg-white/[.02] p-5 text-center text-xs text-stone-500">Add moods, tags, or locations to your entries to reveal personal conditions that support you.</div>
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2">
+                {moodReplay.map((item) => (
+                  <div key={item.label} className="rounded-xl border border-white/[.06] bg-white/[.02] p-4">
+                    <div className="flex items-center justify-between gap-3"><span className="truncate text-sm font-medium text-stone-200">{item.label}</span><span className="font-mono text-xs text-amber-300">{item.score}%</span></div>
+                    <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/[.06]"><div className="h-full rounded-full bg-amber-300" style={{ width: `${item.score}%` }} /></div>
+                    <p className="mt-2 text-[11px] text-stone-500">Appeared in {item.total} {item.total === 1 ? 'entry' : 'entries'} · {item.words} words</p>
+                    <p className="mt-2 font-serif-editor text-xs italic text-stone-400">“This context often accompanies your more positive moods.”</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* TAB 3: Rhythm & Themes */}
         {activeTab === 'habits' && (
           <div className="space-y-4">
@@ -940,6 +992,4 @@ export const JournalInsightsModal: React.FC<JournalInsightsModalProps> = ({
     </Dialog>
   );
 };
-
-
 

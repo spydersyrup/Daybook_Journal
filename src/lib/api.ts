@@ -7,6 +7,7 @@ import type {
   ReflectionMessage,
   SuggestedMetadata,
   VoiceStructuredEntry,
+  ReflectionMode,
 } from '../types';
 
 export async function fetchPromptInspirations(): Promise<PromptInspiration[]> {
@@ -28,6 +29,7 @@ export async function analyzeJournalEntry(params: {
   content: string;
   mood?: string;
   location?: EntryLocation | null;
+  mode?: ReflectionMode;
 }): Promise<AIAnalysis> {
   const token = await getAuthToken();
   if (!token) {
